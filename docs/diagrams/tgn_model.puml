@@ -1,0 +1,84 @@
+@startuml GraphSentinel_TGN_Model
+' GraphSentinel — the Temporal Graph Network for ONE authentication event (inference path).
+' Dimensions are the shipped v3 configuration: memory 64, time 16, hidden 96, message 27, nodes 63,397.
+' Every box maps to a module in src/graphsentinel/models/tgn.py (TemporalGraphNetwork.score / .update / .step).
+' Render:  java -jar plantuml.jar -tpng docs/diagrams/tgn_model.puml
+
+skinparam defaultFontName Calibri
+skinparam defaultFontSize 12
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #EAF1F8
+  RoundCorner 8
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #DDE8F3
+}
+skinparam ArrowColor #5B6773
+skinparam ArrowFontColor #1B2430
+skinparam ArrowFontSize 11
+skinparam shadowing false
+skinparam linetype ortho
+
+title Temporal Graph Network — one event, score first (1), then update (2)\n\n
+
+' ----------------------------------------------------------------- inputs
+rectangle "**Event at time t**\nsource account s · destination host d · origin host o\nmessage **x (27-d)** — the 27 causal features" as EVENT #FFFFFF
+
+' ----------------------------------------------------------------- memory bank
+database "**Memory bank**  M : N × 64\nN = 63,397 nodes (accounts + hosts + OOV buckets)\nlast_update[N]  ·  read by (1), written by (2)" as MEM
+
+' ----------------------------------------------------------------- time encoding
+rectangle "**Harmonic time encoder**  (×2)\ndt = t − last_update[node]\ncos(dt · exp(log f) + phase) → **16-d**\nfor s and for d" as TIME
+
+' ----------------------------------------------------------------- score path
+rectangle "(1) **Score path**  — score-before-update" as SCORE #FDEBD0 {
+  rectangle "concat  [ M[s] 64 | M[d] 64 | M[o] 64 | x 27 | τ_s 16 | τ_d 16 ]  →  **251-d**" as CAT1 #FFFFFF
+  rectangle "edge classifier\nLinear 251→96 · LayerNorm · GELU · Dropout 0.15 · Linear 96→96" as MLP #FFFFFF
+  rectangle "residual projection\nLinear 251→96 (no bias)" as RES #FFFFFF
+  rectangle "score head\n(+) → Linear 96→1 → **logit** → sigmoid → **P(malicious)**" as HEAD #FFFFFF
+}
+
+' ----------------------------------------------------------------- update path
+rectangle "(2) **Update path**  — after the whole timestamp group is scored" as UPD #E6F3E8 {
+  rectangle "message function  (once per endpoint, self first)\nconcat [ M[self] 64 | M[other] 64 | x 27 | τ_self 16 | τ_other 16 ] → 187-d\nLinear 187→96 · LayerNorm · GELU · Linear 96→64" as MSG #FFFFFF
+  rectangle "attention aggregator\nper unique node: softmax over its messages, weighted sum → 64-d" as AGG #FFFFFF
+  rectangle "pre-GRU LayerNorm → **GRUCell(64, 64)**\nh_new = GRU(aggregated message, h_old = M[node])" as GRU #FFFFFF
+  rectangle "write-back\nM[node] ← h_new · last_update[node] ← t" as WRITE #FFFFFF
+}
+
+' ----------------------------------------------------------------- downstream
+rectangle "**Noisy-OR fusion**\nrisk = 1 − Π(1 − rᵢ·sᵢ) over P(malicious), novelty, burst, pivot\nalert ≥ 0.3292 · unattended gate ≥ 0.8464" as FUSE #FFFFFF
+
+' ----------------------------------------------------------------- flows
+EVENT -down-> TIME : dt for s, d
+MEM -right-> TIME : last_update
+EVENT -down-> CAT1 : x
+MEM -down-> CAT1 : **read** M[s], M[d], M[o]
+TIME -down-> CAT1 : τ_s, τ_d
+CAT1 -down-> MLP
+CAT1 -down-> RES
+MLP -down-> HEAD
+RES -down-> HEAD
+HEAD -down-> FUSE : P(malicious)
+
+EVENT -down-> MSG : x
+MEM -down-> MSG : **read** M[s], M[d]
+TIME -down-> MSG : τ_s, τ_d
+MSG -down-> AGG : one 64-d message per endpoint
+AGG -down-> GRU
+GRU -down-> WRITE
+WRITE -up-> MEM : **write** (only after (1) for the whole group)
+
+SCORE -[hidden]right-> UPD
+CAT1 -[hidden]right-> MSG
+
+legend right
+  Shipped configuration (configs/model_tgn_v3_high_accuracy.yaml)
+  memory_dim 64 · time_dim 16 · hidden_dim 96 · message_dim 27
+  dropout 0.15 · parameters 107,585 · 60-second time buckets
+  Training only: class-weighted BCE (cap 120), truncated BPTT, AdamW 1e-3
+  Invariant: within a timestamp group all reads (1) precede all writes (2)
+endlegend
+@enduml

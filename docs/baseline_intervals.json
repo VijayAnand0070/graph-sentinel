@@ -1,0 +1,116 @@
+{
+  "reproduced_published_point_estimates": true,
+  "test_pr_auc": {
+    "tgn": {
+      "point": 0.821,
+      "ci95": [
+        0.7639,
+        0.8784
+      ],
+      "width": 0.1145,
+      "resamples": 2000
+    },
+    "logistic": {
+      "point": 0.2463,
+      "ci95": [
+        0.1818,
+        0.3273
+      ],
+      "width": 0.1455,
+      "resamples": 2000
+    },
+    "rule": {
+      "point": 0.0706,
+      "ci95": [
+        0.0428,
+        0.1106
+      ],
+      "width": 0.0678,
+      "resamples": 2000
+    },
+    "isolation_forest": {
+      "point": 0.0406,
+      "ci95": [
+        0.0205,
+        0.0837
+      ],
+      "width": 0.0632,
+      "resamples": 2000
+    },
+    "rarity": {
+      "point": 0.0072,
+      "ci95": [
+        0.005,
+        0.0124
+      ],
+      "width": 0.0074,
+      "resamples": 2000
+    }
+  },
+  "paired_comparisons": [
+    {
+      "comparison": "tgn - logistic",
+      "difference": {
+        "point": 0.5747,
+        "ci95": [
+          0.4917,
+          0.6483
+        ],
+        "width": 0.1567,
+        "resamples": 2000
+      },
+      "fraction_a_wins": 1.0,
+      "significant": true
+    },
+    {
+      "comparison": "tgn - rule",
+      "difference": {
+        "point": 0.7505,
+        "ci95": [
+          0.6887,
+          0.8026
+        ],
+        "width": 0.1139,
+        "resamples": 2000
+      },
+      "fraction_a_wins": 1.0,
+      "significant": true
+    },
+    {
+      "comparison": "tgn - isolation_forest",
+      "difference": {
+        "point": 0.7804,
+        "ci95": [
+          0.7147,
+          0.8353
+        ],
+        "width": 0.1206,
+        "resamples": 2000
+      },
+      "fraction_a_wins": 1.0,
+      "significant": true
+    },
+    {
+      "comparison": "tgn - rarity",
+      "difference": {
+        "point": 0.8139,
+        "ci95": [
+          0.7566,
+          0.8702
+        ],
+        "width": 0.1135,
+        "resamples": 2000
+      },
+      "fraction_a_wins": 1.0,
+      "significant": true
+    }
+  ],
+  "best_baseline": "logistic",
+  "ratio": {
+    "point": 3.33,
+    "envelope": [
+      2.33,
+      4.83
+    ]
+  }
+}

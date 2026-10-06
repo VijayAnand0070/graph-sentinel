@@ -1,0 +1,44 @@
+schema_version: 1
+
+model:
+  message_dim: 27
+  memory_dim: 64
+  time_dim: 16
+  hidden_dim: 96
+  # Lowered from 0.30: the logistic-regression baseline hit 0.916 validation
+  # PR-AUC on the same causal features with no regularization at all, which
+  # suggests v2's dropout was likely holding the TGN back from fully using a
+  # strongly discriminative feature set, not preventing real overfitting.
+  dropout: 0.15
+  score_before_memory_update: true
+
+training:
+  # More epochs + more patience: v2 stopped at epoch 9 (best was epoch 6,
+  # 0.8481) after 3 non-improving epochs. Giving it more room to keep
+  # searching past a temporary dip before declaring convergence.
+  epochs: 16
+  patience: 5
+  seed: 1729
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.01
+  loss: weighted_bce
+  truncate_after_events: 2048
+  oov_user_buckets: 4096
+  oov_host_buckets: 16384
+  # Raised from 50.0: less aggressive down-weighting of the (already rare)
+  # positive class, letting the model push harder on true positives.
+  positive_weight_cap: 120.0
+  # Kept at 60s (validated 20.7x training / 16.9x validation-pass speedup,
+  # ~7-8 min/epoch on the full 545k dataset). A finer window (e.g. 15s) would
+  # test whether time-bucketing itself costs accuracy, but drops throughput
+  # ~4x back toward the unwindowed regime (~30+ min/epoch, hours per run) --
+  # deferred to a dedicated follow-up run rather than folded in here.
+  time_bucket_seconds: 60
+
+selection:
+  train_fraction: 0.61358
+  validation_fraction: 0.17305
+  false_positives_per_10000_budget: 25
+  require_baseline_improvement: true
+  minimum_pr_auc_improvement: 0.0

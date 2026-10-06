@@ -1,0 +1,45 @@
+schema_version: 1
+
+model:
+  message_dim: 27
+  memory_dim: 64
+  time_dim: 16
+  hidden_dim: 96
+  dropout: 0.30
+  score_before_memory_update: true
+
+training:
+  epochs: 12
+  patience: 3
+  seed: 1729
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.01
+  loss: weighted_bce
+  truncate_after_events: 2048
+  oov_user_buckets: 4096
+  oov_host_buckets: 16384
+  positive_weight_cap: 50.0
+  # Measured on this exact dataset: 543,126 of 543,615 events land on a
+  # unique exact-second timestamp (avg batch size 1.001), so exact-timestamp
+  # batching drives ~543k sequential single-event forward passes -- almost
+  # pure per-call dispatch overhead, not GPU compute. A 60s window cuts that
+  # to 23,040 batches (23.6x fewer calls, avg batch size ~23.6 events) while
+  # staying tiny (0.004%) relative to the 16-day stream and to the
+  # minutes-to-hours dwell times lateral-movement detection cares about.
+  time_bucket_seconds: 60
+
+selection:
+  # Data-driven split, not blind fractions: analysis of features_lanl_1m_cuda
+  # (days 0-15, 543,615 events) found two attack "bursts" -- day 8 (261
+  # attacks) and day 12 (207 attacks) -- that a plain 70/15/15 split places
+  # entirely inside training, leaving validation with only 5 positives.
+  # These fractions instead cut at day 9/10 and day 12/13 boundaries:
+  #   train:      333,538 events, 316 attacks (days 0-9)
+  #   validation:  94,063 events, 207 attacks (days 10-12, catches the 2nd burst)
+  #   test:       116,014 events, 126 attacks (days 13-15)
+  train_fraction: 0.61358
+  validation_fraction: 0.17305
+  false_positives_per_10000_budget: 25
+  require_baseline_improvement: true
+  minimum_pr_auc_improvement: 0.0

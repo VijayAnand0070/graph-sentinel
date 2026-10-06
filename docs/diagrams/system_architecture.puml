@@ -1,0 +1,80 @@
+@startuml GraphSentinel_System_Architecture
+' GraphSentinel — system architecture as a C4 container diagram.
+' Every container below maps to a package under src/graphsentinel/; every arrow is named by what flows on it.
+' Render:  java -jar plantuml.jar -tpng docs/diagrams/system_architecture.puml
+!include <C4/C4_Container>
+
+LAYOUT_TOP_DOWN()
+skinparam defaultFontName Calibri
+skinparam wrapWidth 220
+
+title GraphSentinel — System Architecture (C4 container view, September 2026)
+
+' ---------------------------------------------------------------- outside the system
+Person(analyst, "SOC analyst", "Investigates alerts, approves or lifts actions, keeps or lifts automatic locks")
+System_Ext(sources, "Authentication log sources", "Windows Security (SIEM / winlogbeat), sshd auth.log, Zeek kerberos/ntlm, Entra ID, Okta, CSV/JSONL, LANL")
+System_Ext(directory, "Directory / endpoint / network tools", "Active Directory & Entra (PowerShell, Graph), EDR isolate API, host firewall")
+
+' ---------------------------------------------------------------- the system
+System_Boundary(gs, "GraphSentinel (one Python process, one ordered event stream)") {
+
+    Boundary(ingest, "Ingestion", "sources/, ingestion/") {
+        Container(adapters, "Source adapters", "graphsentinel.sources", "Seven formats → one event: time · account · source host · destination host · success; canonical identities")
+        Container(dictionary, "Frozen entity dictionary", "ingestion.id_map", "Stable integer identity per account/host, hash-bound to the checkpoint; OOV buckets for unseen entities")
+    }
+
+    Boundary(features, "Features & model", "features/, models/") {
+        Container(engine, "Causal feature engine", "features.causal", "27 features from the past only; rolling windows + cumulative history; warm-state snapshot/restore; per-batch checkpoint & rollback")
+        Container(tgn, "Temporal Graph Network", "models.tgn · InferenceSession", "64-d memory per account/host; harmonic time encoding; score-before-update; outputs P(malicious) per event")
+        ContainerDb(state, "Warm state", "feature_state.json.gz · tgn_memory.npz", "Feature-engine snapshot and model memory, restored at boot, saved on demand")
+    }
+
+    Boundary(detection, "Detection", "detection/") {
+        Container(signals, "Signal tracker", "detection.signals", "novelty · burst · pivot per timestamp group; the same object on every path")
+        Container(chain, "Chain rule", "detection.policy · signals.is_chain_hop", "4 successful hops into never-reached hosts in 1,800 s → asserts T1021 at high confidence, raises risk to the gate")
+        Container(fusion, "Noisy-OR fusion + gate", "detection.fusion · detection.gates", "risk = 1 − Π(1 − rᵢsᵢ); alert threshold 0.3292; execution gate 0.8464 (derived on validation)")
+        Container(tactics, "ATT&CK attribution & evidence", "detection.tactics · explain", "Technique, confidence, evidence bundle, ranked paths, grounded triage")
+    }
+
+    Boundary(response, "Response", "response/") {
+        Container(coordinator, "Response coordinator", "response.coordinator", "Plans per alert; unattended budget 20/h estate-wide, 1 per account/h; one execution path")
+        Container(loop, "Prevention loop", "response.incidents", "contain (force_reauth) → verify 30 min (event time) → escalate once (lock_account, reversible) → revert after 60 min (wall time)")
+        Container(executor, "Executor + connectors", "response.executor · connectors · backends", "Literal command per action with its revert; dry_run backend by default; PowerShell backend only when armed; irreversible actions never unattended")
+    }
+
+    Boundary(presentation, "Presentation & storage", "api/, web/") {
+        Container(api, "REST API", "FastAPI · 72 routes", "/api/v1/live/events, alerts, paths, cases, response/*, research/summary; X-API-Key; /ready; Prometheus metrics")
+        Container(console, "Analyst console", "single HTML page served by the API", "11 workspaces incl. Automatic Response (Prevention Loop panel) and Research Evidence")
+        ContainerDb(db, "Durable store", "SQLite (WAL)", "Alerts, dispatch records, cases, audit; replayed on restart so an action cannot re-fire")
+    }
+}
+
+' ---------------------------------------------------------------- flows
+Rel(sources, adapters, "log lines / JSON / batches", "files, POST /api/v1/live/events")
+Rel(adapters, dictionary, "canonical names")
+Rel(adapters, engine, "normalised event")
+Rel(dictionary, tgn, "node ids")
+Rel(engine, signals, "27 features")
+Rel(engine, tgn, "27-d message + Δt")
+Rel_L(engine, state, "snapshot / restore")
+Rel_R(tgn, state, "memory")
+Rel(signals, chain, "reach history (successful hops only)")
+Rel(signals, fusion, "novelty · burst · pivot")
+Rel(tgn, fusion, "P(malicious)")
+Rel(chain, fusion, "chain detected → floor at gate")
+Rel(fusion, tactics, "risk ≥ threshold → alert")
+Rel(chain, tactics, "T1021, high confidence")
+Rel(tactics, coordinator, "alert + technique + confidence + risk")
+Rel(coordinator, loop, "containment under observation")
+Rel(loop, coordinator, "escalation on second qualifying detection")
+Rel(coordinator, executor, "unattended action / reserved action")
+Rel(executor, directory, "logoff · Revoke-MgUserSignInSession · Disable/Enable-ADAccount · isolate · firewall rule", "only when armed")
+Rel(executor, db, "record: outcome, command, authority")
+Rel(tactics, db, "alert + evidence")
+Rel(api, db, "reads / writes")
+Rel(console, api, "REST + WebSocket")
+Rel(analyst, console, "investigate, approve, keep / lift")
+Rel(api, coordinator, "approve, mode, keep, revert")
+
+SHOW_LEGEND()
+@enduml

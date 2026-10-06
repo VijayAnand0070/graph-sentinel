@@ -1,0 +1,30 @@
+schema_version: 1
+
+model:
+  message_dim: 27
+  memory_dim: 64
+  time_dim: 16
+  hidden_dim: 96
+  dropout: 0.10
+  score_before_memory_update: true
+
+training:
+  epochs: 12
+  patience: 3
+  seed: 1729
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  loss: weighted_bce
+  truncate_after_events: 2048
+  oov_user_buckets: 4096
+  oov_host_buckets: 16384
+  positive_weight_cap: null
+  time_bucket_seconds: 0
+
+selection:
+  train_fraction: 0.70
+  validation_fraction: 0.15
+  false_positives_per_10000_budget: 25
+  require_baseline_improvement: true
+  minimum_pr_auc_improvement: 0.0

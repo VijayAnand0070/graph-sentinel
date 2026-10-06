@@ -1,0 +1,23 @@
+dataset:
+  name: lanl_comprehensive_multisource
+  version: "2015"
+  source_page: https://csr.lanl.gov/data/cyber1/
+  raw_dir: data/raw/lanl
+  interim_dir: data/interim
+  processed_dir: data/processed
+  missing_token: "?"
+  seconds_per_day: 86400
+
+registration:
+  required_scope: core
+  quick_scan_rows: 10000
+  copy_buffer_mib: 8
+  refuse_overwrite: true
+
+splits:
+  strategy: chronological
+  train_fraction: 0.70
+  validation_fraction: 0.15
+  test_fraction: 0.15
+  require_positive_per_evaluation_split: true
+

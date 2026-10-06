@@ -1,0 +1,67 @@
+services:
+  graphsentinel-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: graphsentinel:0.9.0
+    ports:
+      - "8000:8000"
+    environment:
+      GRAPHSENTINEL_LOG_LEVEL: info
+      GRAPHSENTINEL_WORKERS: "1"
+      GRAPHSENTINEL_DATABASE: /app/artifacts/graphsentinel.db
+      GRAPHSENTINEL_ID_MAP_DIR: /app/artifacts/id_maps
+      GRAPHSENTINEL_FEATURE_DIR: /app/data/processed/features_v1
+      GRAPHSENTINEL_FEATURE_REPORT: /app/artifacts/reports/features_v1.json
+      GRAPHSENTINEL_TRAINED_CHECKPOINT: /app/artifacts/models/tgn-production.pt
+      GRAPHSENTINEL_TRAINING_REPORT: /app/artifacts/metrics/tgn_training.json
+      GRAPHSENTINEL_PHASE16_STATE: /app/artifacts/runtime/phase16-state.json
+      GRAPHSENTINEL_PIPELINE_LEASE: /app/artifacts/runtime/model-pipeline.lease.json
+      GRAPHSENTINEL_MODEL_CONFIG: /app/configs/model_tgn.yaml
+      # Warm state. Without these the deployment starts cold, which costs
+      # ~54% of achievable PR-AUC while ROC-AUC barely moves -- invisible to
+      # ordinary monitoring. Build them with `graphsentinel backfill`; /ready
+      # reports `degraded` until they are present. See docs/ONBOARDING.md.
+      GRAPHSENTINEL_FEATURE_STATE: /app/artifacts/state/feature_state.json.gz
+      GRAPHSENTINEL_TGN_MEMORY: /app/artifacts/state/tgn_memory.npz
+      # Append-only record of every state-changing request. Required because
+      # the response layer can disable accounts and isolate hosts.
+      GRAPHSENTINEL_AUDIT_LOG: /app/artifacts/state/audit.jsonl
+      # noisy_or (default) | linear | tgn_only -- each carries its own
+      # calibrated threshold; see docs/EVALUATION_REPORT.md for the measured
+      # trade-offs between them.
+      GRAPHSENTINEL_FUSION: noisy_or
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./data:/app/data
+    restart: unless-stopped
+
+  graphsentinel-dashboard:
+    image: graphsentinel:0.9.0
+    depends_on:
+      graphsentinel-api:
+        condition: service_healthy
+    command:
+      - python
+      - -m
+      - streamlit
+      - run
+      - src/graphsentinel/dashboard/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+    ports:
+      - "8501:8501"
+    environment:
+      GRAPHSENTINEL_API_URL: http://graphsentinel-api:8000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)"
+      interval: 30s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped

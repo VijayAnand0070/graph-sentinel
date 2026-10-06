@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Build and editor artifacts
+build/
+dist/
+.idea/
+.vscode/
+
+# Secrets and local overrides
+.env
+configs/local*.yaml
+
+# Data and generated artifacts (keep directory placeholders only)
+data/raw/**/*
+data/interim/**/*
+data/processed/**/*
+!data/raw/.gitkeep
+!data/raw/lanl/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+artifacts/**/*
+!artifacts/models/.gitkeep
+!artifacts/metrics/.gitkeep
+!artifacts/reports/.gitkeep
+!artifacts/id_maps/.gitkeep
+
+
+# Local environments, tool state and bundles
+.venv-*/
+.claude/
+*.zip

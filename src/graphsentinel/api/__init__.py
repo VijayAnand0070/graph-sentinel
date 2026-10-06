@@ -1,0 +1,1 @@
+"""Typed GraphSentinel service boundary."""

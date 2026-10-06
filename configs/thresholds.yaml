@@ -1,0 +1,21 @@
+fusion:
+  tgn: 0.55
+  novelty: 0.20
+  burst: 0.10
+  pivot: 0.10
+  corroboration: 0.05
+
+path_ranking:
+  mean_edge_risk: 0.55
+  new_edge_ratio: 0.20
+  pivot_density: 0.15
+  evidence_support: 0.10
+  max_hops: 5
+  forward_window_seconds: 1800
+  top_k: 20
+
+selection:
+  tune_on: validation
+  objective: maximize_recall_under_alert_budget
+  false_alerts_per_10000_budget: 25
+

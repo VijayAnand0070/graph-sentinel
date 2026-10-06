@@ -1,0 +1,12 @@
+# Keeps this directory in version control now that it is empty.
+#
+# api/main.py mounts it with StaticFiles(directory=.../assets), which raises
+# RuntimeError at import time if the directory does not exist -- so losing it
+# would stop the whole API booting, not just break asset serving. Git does not
+# track empty directories, so without this file a fresh clone would fail to
+# start.
+#
+# The console is self-contained: index.html carries its own styles in inline
+# <style> blocks and its JavaScript in a single inline <script>. The previous
+# occupants (app.js, app.css) belonged to an earlier console and were loaded by
+# nothing; both remain recoverable from graphsentinel_project_source.zip.
