@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "namespace": "logon_types",
+  "values": [
+    "<UNKNOWN>",
+    "Network",
+    "Service",
+    "Batch",
+    "Interactive",
+    "NetworkCleartext",
+    "CachedInteractive",
+    "Unlock",
+    "NewCredentials",
+    "RemoteInteractive"
+  ]
+}

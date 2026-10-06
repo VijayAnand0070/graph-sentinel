@@ -36,10 +36,23 @@ Python 3.11 or 3.12 is recommended.
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-python -m pip install -e ".[data,dev]"
+python -m pip install -e ".[all,dev]"
 python -m graphsentinel doctor
 python -m pytest
 ```
+
+## Run the demo console
+
+The repository includes a small trained model and saved state (about 17 MB), so the console runs
+without downloading LANL:
+
+```powershell
+python run_demo.py
+```
+
+Then open http://127.0.0.1:8010. Response actions run in dry-run mode: every lock is planned and
+audited, nothing is executed. AI-written incident reports additionally need `pip install -e ".[agent]"`
+and a local Ollama server with the `qwen3.5:4b` model; without them a deterministic report is used.
 
 ## Obtain and register LANL data
 

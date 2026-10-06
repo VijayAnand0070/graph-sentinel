@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "namespace": "orientations",
+  "values": [
+    "<UNKNOWN>",
+    "LogOn",
+    "TGS",
+    "LogOff",
+    "TGT",
+    "AuthMap",
+    "ScreenUnlock",
+    "ScreenLock"
+  ]
+}

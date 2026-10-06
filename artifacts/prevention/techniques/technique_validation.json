@@ -1,0 +1,83 @@
+{
+  "checkpoint": "D:\\graph_sentinel\\artifacts\\models\\tgn-lanl_545k_split_v3-candidate-c6912ac36724.pt",
+  "model_version": "tgn-auth-causal-v1-bb20801e0b40",
+  "operating_point": "noisy_or",
+  "threshold": 0.329195,
+  "replicates_per_builder": 12,
+  "benign_events": 102375,
+  "benign_alert_rate_per_10k": 24.811,
+  "techniques": {
+    "T1110": {
+      "technique_id": "T1110",
+      "injected": 436,
+      "alerted": 0,
+      "detection_recall": 0.0,
+      "attributed_correctly": 12,
+      "attribution_recall": 0.0275,
+      "attributed_to_another_technique": 0,
+      "false_attributions_on_benign": 4,
+      "false_attribution_rate_per_10k": 0.391,
+      "precision": 0.75
+    },
+    "T1087": {
+      "technique_id": "T1087",
+      "injected": 288,
+      "alerted": 183,
+      "detection_recall": 0.6354,
+      "attributed_correctly": 110,
+      "attribution_recall": 0.3819,
+      "attributed_to_another_technique": 135,
+      "false_attributions_on_benign": 4,
+      "false_attribution_rate_per_10k": 0.391,
+      "precision": 0.9649
+    },
+    "T1078": {
+      "technique_id": "T1078",
+      "injected": 36,
+      "alerted": 2,
+      "detection_recall": 0.0556,
+      "attributed_correctly": 10,
+      "attribution_recall": 0.2778,
+      "attributed_to_another_technique": 0,
+      "false_attributions_on_benign": 0,
+      "false_attribution_rate_per_10k": 0.0,
+      "precision": 1.0
+    },
+    "T1550.003": {
+      "technique_id": "T1550.003",
+      "injected": 48,
+      "alerted": 3,
+      "detection_recall": 0.0625,
+      "attributed_correctly": 0,
+      "attribution_recall": 0.0,
+      "attributed_to_another_technique": 11,
+      "false_attributions_on_benign": 0,
+      "false_attribution_rate_per_10k": 0.0,
+      "precision": 0.0
+    },
+    "T1550.002": {
+      "technique_id": "T1550.002",
+      "injected": 48,
+      "alerted": 9,
+      "detection_recall": 0.1875,
+      "attributed_correctly": 0,
+      "attribution_recall": 0.0,
+      "attributed_to_another_technique": 9,
+      "false_attributions_on_benign": 0,
+      "false_attribution_rate_per_10k": 0.0,
+      "precision": 0.0
+    },
+    "T1078.002": {
+      "technique_id": "T1078.002",
+      "injected": 36,
+      "alerted": 1,
+      "detection_recall": 0.0278,
+      "attributed_correctly": 31,
+      "attribution_recall": 0.8611,
+      "attributed_to_another_technique": 5,
+      "false_attributions_on_benign": 233,
+      "false_attribution_rate_per_10k": 22.759,
+      "precision": 0.1174
+    }
+  }
+}
