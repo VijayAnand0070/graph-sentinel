@@ -31,6 +31,7 @@ engine produced it except by the provenance it is handed.
 from __future__ import annotations
 
 import json
+import time
 import re
 from collections.abc import Callable, Sequence
 from typing import Any, Literal, Protocol, TypedDict
@@ -54,6 +55,11 @@ FactKind = Literal["alert", "action", "escalation", "context"]
 # the bundle: everything the report is allowed to say
 # ---------------------------------------------------------------------------
 
+
+
+def _clock(epoch: int | float) -> str:
+    """Wall-clock seconds as a readable UTC time for the analyst."""
+    return time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(int(epoch)))
 
 class SocFact(StrictModel):
     """One citable fact. ``value`` keeps the number behind the sentence."""
@@ -154,7 +160,7 @@ class SocIncidentReport(StrictModel):
                 "| when | action | outcome | authority | command |",
                 "|---|---|---|---|---|",
                 *(
-                    f"| {a.at} | `{a.action}` | {a.outcome} | {a.authority} | "
+                    f"| {_clock(a.at)} | `{a.action}` | {a.outcome} | {a.authority} | "
                     f"`{(a.command or '—')[:120]}` |"
                     for a in self.actions_taken
                 ),
@@ -166,7 +172,7 @@ class SocIncidentReport(StrictModel):
                 *(
                     f"- `{a.action}` on alert {a.alert_id}"
                     f"{'' if a.reversible else ' — irreversible'}"
-                    + (f" — decide by t={a.decision_due}" if a.decision_due is not None else "")
+                    + (f" — decide by {_clock(a.decision_due)}" if a.decision_due is not None else "")
                     + (f"; {a.on_timeout}" if a.on_timeout else "")
                     for a in self.actions_pending
                 ),
@@ -396,7 +402,8 @@ def build_soc_incident_bundle(
         elif revert_at:
             add(
                 "escalation",
-                f"The lock reverts automatically at {revert_at} unless an analyst keeps it; "
+                "The lock reverts automatically at "
+                f"{time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime(int(revert_at)))} unless an analyst keeps it; "
                 "an alert on the account restarts that clock.",
                 at=int(revert_at),
                 value=int(revert_at),

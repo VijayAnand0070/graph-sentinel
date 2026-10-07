@@ -33,7 +33,7 @@ api = [
 dashboard = ["streamlit>=1.42,<1.57"]
 hub = ["huggingface_hub[hf_xet]>=1.1,<2"]
 agent = ["langgraph>=1.0,<2"]
-all = ["graphsentinel[data,ml,api]"]
+all = ["graphsentinel[data,ml,api,agent]"]
 dev = [
   "mypy>=1.15,<2",
   "httpx>=0.27,<0.29",

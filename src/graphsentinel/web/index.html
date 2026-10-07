@@ -2823,7 +2823,8 @@ function renderSocIncidents(incidents) {
     const color = inc.escalated ? 'var(--red)' : inc.highest_risk >= 0.85 ? 'var(--amber)' : 'var(--cyan)';
     const locked = inc.escalated ? ' &middot; <span style="color:var(--red);">locked by the system</span>' : '';
     const auto = autoReports[inc.account];
-    const autoBadge = auto ? ` &middot; <span style="color:var(--amber);">AI report ready</span>` : '';
+    const autoIsAI = auto && auto.provider && !String(auto.provider).startsWith('deterministic') && !auto.fallback;
+    const autoBadge = auto ? ` &middot; <span style="color:var(--amber);">${autoIsAI ? 'AI report ready' : 'Report ready'}</span>` : '';
     const waiting = inc.pending ? ` &middot; ${inc.pending} waiting` : '';
     return `
       <div style="background:var(--bg-surface);border:1px solid ${color};border-radius:var(--radius-md);padding:10px 12px;">
@@ -2835,7 +2836,7 @@ function renderSocIncidents(incidents) {
           ${inc.alerts} alert${inc.alerts === 1 ? '' : 's'} &middot; ${inc.hosts} hosts &middot; ${inc.actions} action${inc.actions === 1 ? '' : 's'}${waiting}${locked}${autoBadge}
         </div>
         <div style="margin-top:6px;display:flex;gap:6px;">
-          ${auto ? `<button class="graph-btn" style="font-size:10px;padding:3px 9px;" onclick="showAutoReport('${escapeHtml(inc.account)}')">View AI report</button>` : ''}
+          ${auto ? `<button class="graph-btn" style="font-size:10px;padding:3px 9px;" onclick="showAutoReport('${escapeHtml(inc.account)}')">${autoIsAI ? 'View AI report' : 'View report'}</button>` : ''}
           <button class="graph-btn" style="font-size:10px;padding:3px 9px;" onclick="writeSocReport(${i})">${auto ? 'Rewrite' : 'Write report'}</button>
           <a class="graph-btn" style="font-size:10px;padding:3px 9px;text-decoration:none;" href="/api/v1/soc/incidents/${encodeURIComponent(inc.account)}/report.md" target="_blank" rel="noopener">Markdown</a>
         </div>
