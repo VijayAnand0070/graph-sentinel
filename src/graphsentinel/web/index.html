@@ -6605,8 +6605,18 @@ document.getElementById('topTriggerAtkBtn').addEventListener('click', () => star
 // afterwards, and never swallow a refusal.
 let liveTimeShift = 0;
 let liveRefusals = 0;
+// Senders overlap for a moment when one hands over to another (the attack
+// demo interrupting the background stream); two batches in flight at once
+// can both be stamped behind the gateway's clock. Post one batch at a time.
+let liveSendChain = Promise.resolve();
 
-async function postLiveEvents(events, options) {
+function postLiveEvents(events, options) {
+  const next = liveSendChain.then(() => postLiveEventsNow(events, options));
+  liveSendChain = next.catch(() => null);
+  return next;
+}
+
+async function postLiveEventsNow(events, options) {
   const { tag = '[STREAM]', quiet = false } = options || {};
   const send = (list) => fetch('/api/v1/live/events', {
     method: 'POST',
