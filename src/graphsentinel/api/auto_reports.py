@@ -18,10 +18,12 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import re
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("graphsentinel.auto_reports")
@@ -40,6 +42,8 @@ class AutoReportService:
     inline: bool = False
     #: An account reported this recently is not reported again (seconds).
     min_interval_seconds: float = 120.0
+    #: Folder each report is also saved to (Markdown and JSON); None keeps them in memory only.
+    report_dir: Path | None = None
     generated: int = 0
     failed: int = 0
     _reports: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -108,11 +112,25 @@ class AutoReportService:
             self._reports[account] = entry
             self.generated += 1
         logger.info("automatic SOC report written for %s (%s)", account, entry["provenance"].get("provider"))
+        self._save(entry)
         if self.deliver is not None:
             try:
                 self.deliver(account, entry)
             except Exception:  # noqa: BLE001
                 logger.exception("automatic SOC report delivery failed for %s", account)
+
+    def _save(self, entry: dict[str, Any]) -> None:
+        if self.report_dir is None:
+            return
+        try:
+            self.report_dir.mkdir(parents=True, exist_ok=True)
+            stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(entry["generated_at"]))
+            stem = f"{stamp}_{re.sub(r'[^A-Za-z0-9._-]+', '_', entry['account'])}"
+            (self.report_dir / f"{stem}.md").write_text(entry["report"]["markdown"], encoding="utf-8")
+            (self.report_dir / f"{stem}.json").write_text(json.dumps(entry, indent=2), encoding="utf-8")
+            entry["saved_to"] = str(self.report_dir / f"{stem}.md")
+        except OSError:
+            logger.exception("automatic SOC report could not be saved for %s", entry["account"])
 
     # ------------------------------------------------------------ views
     def wait_idle(self, timeout: float = 30.0) -> None:
@@ -141,12 +159,14 @@ class AutoReportService:
                         "severity": e["report"]["severity"],
                         "provider": e["provenance"].get("provider"),
                         "fallback": e["provenance"].get("fallback"),
+                        "saved_to": e.get("saved_to"),
                     }
                     for e in rows
                 ],
                 "queued": sorted(self._queued),
                 "generated": self.generated,
                 "failed": self.failed,
+                "report_dir": str(self.report_dir) if self.report_dir is not None else None,
             }
 
 

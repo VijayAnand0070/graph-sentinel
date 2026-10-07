@@ -64,6 +64,23 @@ def test_a_report_is_written_kept_and_delivered_once_per_interval() -> None:
     assert summary["generated"] == 2 and summary["reports"][0]["severity"] == "critical"
 
 
+def test_each_report_is_saved_as_markdown_and_json(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    service = AutoReportService(
+        generate=_FakeReport, provenance=lambda: {"provider": "deterministic"},
+        clock=lambda: 1_000.0, inline=True, report_dir=tmp_path / "soc",
+    )
+    assert service.request("C1708$@DOM1", alert_id="GS-9")
+    md = sorted((tmp_path / "soc").glob("*.md"))
+    js = sorted((tmp_path / "soc").glob("*.json"))
+    assert len(md) == 1 and len(js) == 1
+    assert md[0].name.endswith("_C1708_DOM1.md")
+    assert md[0].read_text(encoding="utf-8") == "# Suspicious movement by C1708$@DOM1"
+    assert json.loads(js[0].read_text(encoding="utf-8"))["trigger_alert"] == "GS-9"
+    summary = service.summary()
+    assert summary["reports"][0]["saved_to"] == str(md[0])
+    assert summary["report_dir"] == str(tmp_path / "soc")
+
+
 def test_a_failing_writer_is_counted_and_never_raises() -> None:
     def broken(account: str) -> _FakeReport:
         raise RuntimeError("model unreachable")

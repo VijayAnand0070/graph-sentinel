@@ -7319,7 +7319,9 @@ function citedStatement(s) {
 
 function triageProvenanceBadge(meta) {
   if (!meta || !meta.provider) return '';
-  const isAgent = meta.provider !== 'deterministic-template';
+  // Both template writers ('deterministic-template' for alerts,
+  // 'deterministic-soc-template' for SOC reports) are not model output.
+  const isAgent = !String(meta.provider).startsWith('deterministic');
   // Three distinct states an analyst must be able to tell apart:
   // deterministic template, model-authored, and model-attempted-but-fell-back
   // (the last still yields template text, so it must not read as AI output).

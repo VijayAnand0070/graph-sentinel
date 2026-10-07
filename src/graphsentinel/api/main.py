@@ -428,6 +428,7 @@ def create_app(service: DetectionService | None = None) -> FastAPI:
         generate=detection.soc_report,
         provenance=lambda: dict(detection.last_soc_provenance),
         deliver=_deliver_report,
+        report_dir=Path(os.getenv("GRAPHSENTINEL_SOC_REPORT_DIR", "artifacts/reports/soc")),
     )
     auto_reports_enabled = os.getenv("GRAPHSENTINEL_AUTO_REPORT", "on").strip().lower() not in {
         "off", "0", "false", "no",

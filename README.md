@@ -51,7 +51,9 @@ python run_demo.py
 ```
 
 Then open http://127.0.0.1:8010. Response actions run in dry-run mode: every lock is planned and
-audited, nothing is executed. AI-written incident reports additionally need `pip install -e ".[agent]"`
+audited, nothing is executed. When the system locks an account it writes an incident report, shown under
+**Automatic Response** and saved to `artifacts/reports/soc/` as Markdown and JSON (set
+`GRAPHSENTINEL_SOC_REPORT_DIR` to change the folder). AI-written incident reports additionally need `pip install -e ".[agent]"`
 and a local Ollama server with the `qwen3.5:4b` model; without them a deterministic report is used.
 
 ## Obtain and register LANL data
